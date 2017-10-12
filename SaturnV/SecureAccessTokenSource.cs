@@ -39,15 +39,16 @@ namespace SaturnV
             if (_settings.ValidateData)
                 bytes = bytes.Concat(GetDataBytes(input));
             if (_settings.ValidateTime)
-                bytes = bytes.Concat(GetTimeBytes());
+                bytes = bytes.Concat(GetTimeBytes(now));
 
+            var bytesHash = GetDataBytes(bytes.ToArray());
             return new string(
-                BitConverter.ToUInt32(Truncate(bytes.ToArray()), 0)
-                .ToString()
-                .Take(_settings.TokenLength)
-                .ToArray()
+                    BitConverter.ToUInt32(Truncate(bytesHash), 0)
+                        .ToString()
+                        .Take(_settings.TokenLength)
+                        .ToArray()
                 )
-                .PadLeft(_settings.TokenLength,'0');
+                .PadLeft(_settings.TokenLength, '0');
         }
 
         private static byte[] Truncate(byte[] array)
@@ -66,7 +67,7 @@ namespace SaturnV
             return selected;
         }
 
-        private IEnumerable<byte> GetDataBytes(byte[] data)
+        private byte[] GetDataBytes(byte[] data)
         {
             var hmac = new HMACSHA512(_secret);
             return hmac.ComputeHash(data);
