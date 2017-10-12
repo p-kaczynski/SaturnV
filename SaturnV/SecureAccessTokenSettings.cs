@@ -11,5 +11,6 @@ namespace SaturnV
         public DateTime? TimeZero { get; [PublicAPI]set; }
         public bool ValidateData { get; [PublicAPI]set; }
         public int TokenLength { get; [PublicAPI]set; } = 8;
+        public bool EnsureAtLeastValidFor { get; set; }
     }
 }

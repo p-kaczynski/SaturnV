@@ -65,6 +65,32 @@ namespace SaturnV.Tests
             shortTimeSource.Validate(input, token).ShouldBeFalse();
         }
 
+        [Theory]
+        [MemberData(nameof(RandomStringProvider), 10)]
+        private void GetAndValidateTokens_FullWindow(string input)
+        {
+            var shortTimeSource = new SecureAccessTokenSource(new SecureAccessTokenSettings
+            {
+                ValidateTime = true,
+                ValidateData = true,
+                ValidFor = new TimeSpan(0, 0, 0, 0, 500),
+                Secret = "Lubię placki i długie spacery po plaży.",
+                TokenLength = TokenLength,
+                EnsureAtLeastValidFor = true
+            });
+            var token = shortTimeSource.GetAccessCodeFor(input);
+            token.ShouldNotBeNull();
+            token.Length.ShouldEqual(TokenLength);
+            // wait for nearly a window
+            Thread.Sleep(490);
+
+            shortTimeSource.Validate(input, token).ShouldBeTrue();
+
+            //wait for total of more than 2 windows
+            Thread.Sleep(510);
+            shortTimeSource.Validate(input, token).ShouldBeFalse();
+        }
+
         private static string Mutate(string input)
         {
             var change = Random.Next(1, input.Length);

@@ -30,7 +30,9 @@ namespace SaturnV
         }
 
         [PublicAPI]
-        public string GetAccessCodeFor([NotNull] byte[] input)
+        public string GetAccessCodeFor([NotNull] byte[] input) => GetAccessCodeFor(input, DateTime.Now);
+
+        private string GetAccessCodeFor([NotNull] byte[] input, DateTime now)
         {
             if (input == null) throw new ArgumentNullException(nameof(input));
 
@@ -50,6 +52,7 @@ namespace SaturnV
                 )
                 .PadLeft(_settings.TokenLength, '0');
         }
+
 
         private static byte[] Truncate(byte[] array)
         {
@@ -73,23 +76,25 @@ namespace SaturnV
             return hmac.ComputeHash(data);
         }
 
-        private IEnumerable<byte> GetTimeBytes()
+        private IEnumerable<byte> GetTimeBytes(DateTime now)
         {
             Debug.Assert(_settings.ValidFor != null, "_settings.ValidFor != null");
 
-            var c = Math.Floor((DateTime.Now.Ticks - (_settings.TimeZero ?? DateTime.MinValue).Ticks)
+            var c = Math.Floor((now.Ticks - (_settings.TimeZero ?? DateTime.MinValue).Ticks)
                                 / (double) _settings.ValidFor.Value.Ticks);
 
             return GetDataBytes(BitConverter.GetBytes(c));
         }
 
         [PublicAPI]
-        public string GetAccessCodeFor(string input)
+        public string GetAccessCodeFor(string input) => GetAccessCodeFor(input, DateTime.Now);
+
+        private string GetAccessCodeFor(string input, DateTime now)
         {
             if (string.IsNullOrEmpty(input))
                 throw new ArgumentException($"{nameof(input)} cannot be null or empty.", nameof(input));
 
-            return GetAccessCodeFor(Encoding.UTF8.GetBytes(input));
+            return GetAccessCodeFor(Encoding.UTF8.GetBytes(input), now);
         }
 
         [PublicAPI]
@@ -102,6 +107,11 @@ namespace SaturnV
         }
 
         [PublicAPI]
-        public bool Validate(byte[] input, string token) => GetAccessCodeFor(input) == token;
+        public bool Validate(byte[] input, string token) => 
+            GetAccessCodeFor(input) == token
+            || (_settings.EnsureAtLeastValidFor 
+            && _settings.ValidateTime 
+            && _settings.ValidFor.HasValue 
+            && GetAccessCodeFor(input, DateTime.Now - _settings.ValidFor.Value) == token);
     }
 }
